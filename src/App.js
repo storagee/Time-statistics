@@ -26,27 +26,35 @@ class App extends Component {
             "processes": [
                 {
                     "name": "write this program",
-                    "type": "core",
+                    "type": "work",
                     "startTime": "2017-3-7 9:21:00",
                     "endTime": "2017-3-7 15:21:48",
                     "processes": [
                         {
                             "name": "learn webpack",
-                            "type": "normal",
+                            "type": "personal promotion",
                             "startTime": "2017-3-7 9:21:00",
                             "endTime": "2017-3-7 10:21:00",
-                            "processes": []
+                            "processes": [
+                                {
+                                    "name": "npm install",
+                                    "type": ["waste", "type example"],
+                                    "startTime": "2017-3-7 9:21:00",
+                                    "endTime": "2017-3-7 9:31:05",
+                                    "processes": []
+                                }
+                            ]
                         },
                         {
                             "name": "learn react",
-                            "type": "normal",
+                            "type": "personal promotion",
                             "startTime": "2017-3-7 10:23:43",
                             "endTime": "2017-3-7 13:21:00",
                             "processes": []
                         },
                         {
                             "name": "coding",
-                            "type": "core",
+                            "type": "coding",
                             "startTime": "2017-3-7 13:21:00",
                             "endTime": "2017-3-7 15:21:48",
                             "processes": []
@@ -55,7 +63,7 @@ class App extends Component {
                 },
                 {
                     "name": "publish to github",
-                    "type": "core",
+                    "type": "social",
                     "startTime": "2017-3-7 15:22:25",
                     "endTime": "2017-3-7 15:32:29",
                     "processes": []
@@ -98,7 +106,9 @@ class App extends Component {
                 });
 
                 dayRecording.rootAnalysation = this.processRecording;
-                dayRecording.leafeAnalysation = this.typeRecording;
+                dayRecording.typeAnalysation = this.typeRecording;
+
+                // 更新 jsonEditor
                 this.jsonEditor.set(dayRecording);
             } catch (e) {
                 alert(`json 语法错误：${e}`);
@@ -154,9 +164,17 @@ class App extends Component {
             secondGivToMinute = Math.floor(secondSum / 60),
             minuteSum = time1Split[1] * 1 + time2Split[1] * 1 + secondGivToMinute,
             realMinute = minuteSum % 60,
-            minuteGivToHour = Math.floor(realMinute / 60),
+            minuteGivToHour = Math.floor(minuteSum / 60),
             hourSum = time1Split[0] * 1 + time2Split[0] * 1 + minuteGivToHour;
         return `${this.addPrefix(hourSum)}:${this.addPrefix(realMinute)}:${this.addPrefix(realSecond)}`;
+    };
+
+    typeRecord = (type, time) => {
+        if (!this.typeRecording[type]) {
+            this.typeRecording[type] = time
+        } else {
+            this.typeRecording[type] = this.timeAdder(this.typeRecording[type], time);
+        }
     };
 
     calculateTotalTime = (dayRecording) => {
@@ -169,17 +187,16 @@ class App extends Component {
                         item.endTime = this.adjustTime(item.endTime);
                         item.totalTime = this.getMinute(item.startTime, item.endTime);
 
-                        // 如果是叶子节点，那么统计
-                        console.log(item);
-                        if (item.processes && item.processes.length === 0) {
-                            console.log(item.type);
-                            if (!this.typeRecording[item.type]) {
-                                this.typeRecording[item.type] = item.totalTime
-                            } else {
-                                this.typeRecording[item.type] = this.timeAdder(this.typeRecording[item.type], item.totalTime);
-                            }
-                        } else if(!(item.processes instanceof Array)) {
-                            alert("每个进程都需要有 processes，空则赋值为: []");
+
+                        // 统计每一个节点
+                        if (typeof item.type === 'string') {
+                            this.typeRecord(item.type, item.totalTime);
+                        } else if (item.type instanceof Array) {
+                            item.type.forEach((eachType)=> {
+                                // 时间会增多，一天的时间会大于 24 小时，但主要是用于统计某个进程属于多个分类的情况，比如在地铁上阅读
+                                // 那么这个 type 可以是交通，也可以是阅读
+                                this.typeRecord(eachType, item.totalTime);
+                            })
                         }
                         this.calculateTotalTime(item)
                     } catch (e) {
